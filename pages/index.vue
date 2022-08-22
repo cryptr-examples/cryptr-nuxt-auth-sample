@@ -4,11 +4,11 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import NuxtLogo from '~/components/NuxtLogo.vue';
+import CryptrLogo from '~/components/CryptrLogo.vue';
 import Home from '../components/Home.vue';
 
 export default Vue.extend({
     name: "IndexPage",
-    components: { NuxtLogo, Home }
+    components: { CryptrLogo, Home }
 })
 </script>

@@ -1,18 +1,18 @@
 <template>
-  <div>
-    <NuxtLink to="/private" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center w-full">
+  <div class="grid gap-4 mx-auto my-auto items-center">
+    <NuxtLink to="/private" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center w-full mx-auto">
     Go to private
     </NuxtLink>
   </div>
 </template>
 
 <script lang="ts">
-import NuxtLogo from "./NuxtLogo.vue";
+import CryptrLogo from "./CryptrLogo.vue";
 
 
 export default {
     name: "Home",
-    components: { NuxtLogo }
+    components: { CryptrLogo }
 }
 </script>
 
