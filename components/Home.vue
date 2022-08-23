@@ -12,6 +12,7 @@ import CryptrLogo from "./CryptrLogo.vue";
 
 export default {
     name: "Home",
+    auth: false,
     components: { CryptrLogo }
 }
 </script>
