@@ -1,5 +1,5 @@
 import {Oauth2Scheme} from '@nuxtjs/auth-next'
-import {encodeQuery, normalizePath, urlJoin, randomString} from './utils'
+import {encodeQuery, normalizePath, getProp, urlJoin, parseQuery, randomString} from './utils'
 import requrl from 'requrl'
 
 
@@ -53,6 +53,78 @@ export default class CryptrScheme {
   //   console.debug('endpoints must be configured')
   //   throw new Error(`${SLUG} endpoints must be configured`)
   // }
+
+  async mounted() {
+    console.debug("mounted")
+    const redirected = await this._handleCallback()
+    console.debug("redirected", redirected)
+    if(!redirected) {
+      return this.$auth.fetchUserOnce()
+    }
+  }
+
+
+  async _handleCallback() {
+    console.debug('handleCallback')
+    if (
+      this.$auth.options.redirect &&
+      normalizePath(this.$auth.ctx.route.path, this.$auth.ctx) !==
+        normalizePath(this.$auth.options.redirect.callback, this.$auth.ctx)
+    ) {
+      return
+    }
+    // Callback flow is not supported in server side
+    if (process.server) {
+      return
+    }
+    console.debug("callback guard excluded")
+
+    const hash = parseQuery(this.$auth.ctx.route.hash.substr(1))
+    const parsedQuery = Object.assign({}, this.$auth.ctx.route.query, hash)
+    console.debug('parsedQuery', parsedQuery)
+
+    let token = parsedQuery[this.options.token.property]
+    console.debug('token', token)
+
+    let refreshToken
+
+    if (this.options.refreshToken.property) {
+      refreshToken = parsedQuery[this.options.refreshToken.property]
+    }
+    console.debug('refreshToken', refreshToken)
+
+    // TODO: Fetch state and verifier from db
+
+    const domain = 'blockpulse'
+    const signType = 'sso'
+    const response = await this.$auth.request({
+      method: 'post',
+      baseURL: this.options.baseUrl,
+      url: `/api/v1/tenants/${domain}/${this.options.clientId}/oauth/${signType}/client/token`,
+      data: encodeQuery({
+        client_id: this.options.clientId + '',
+        redirect_uri: this.redirectURI(),
+        responseType: this.options.resposeType,
+        audience: this.options.audience,
+        grant_type: this.options.grantType,
+        client_state: randomString(16),
+        code_verifier: randomString(16)
+      })
+
+    })
+
+    console.debug(response)
+    token = getProp(response.data, this.options.token.property) || token
+    console.debug('token', token)
+    refreshToken =
+    (getProp(
+      response.data,
+      this.options.refreshToken.property
+      )) || refreshToken
+    console.debug('refreshToken', refreshToken)
+
+    return Promise.resolve();
+  }
 
   async login(params) {
     console.debug('login')
@@ -129,7 +201,7 @@ const DEFAULTS = {
   isDedicatedDomain: false,
   scope: ['openid', 'email', 'profile'],
   responseType: 'code',
-  grant_type: 'authorization_code',
+  grantType: 'authorization_code',
   autoLogout: true,
   responseMode: '',
   acrValues: '',
