@@ -1,7 +1,11 @@
 import {Oauth2Scheme} from '@nuxtjs/auth-next'
+import {encodeQuery, normalizePath, urlJoin, randomString} from './utils'
+import requrl from 'requrl'
+
 
 const SLUG = "CryptrScheme"
-// class CryptrScheme extends Oauth2Scheme {
+
+
 export default class CryptrScheme {
 
   constructor(auth, options) {
@@ -14,6 +18,14 @@ export default class CryptrScheme {
     // this.checkEndpoints()
     this.checkOptions()
     console.debug('options', this.options)
+  }
+
+  redirectURI() {
+    const basePath = this.$auth.ctx.base || ''
+    const path = normalizePath(
+      basePath + '/' + this.$auth.options.redirect.callback
+    ) // Don't pass in context since we want the base path
+    return this.options.redirectUri || urlJoin(requrl(this.req), path)
   }
 
   checkOptions() {
@@ -52,7 +64,26 @@ export default class CryptrScheme {
     console.debug('options', this.options)
     console.debug('endpoints', this.options.endpoints)
     await this.$auth.reset();
-    return Promise.resolve()
+    const url = this.loginUrl(params)
+    console.debug(url)
+    window.location.replace(url)
+  }
+
+  gatewayRootUrl() {
+    return this.options.isDedicatedDomain ? this.options.baseUrl : this.options.baseUrl + '/t/' + this.options.domain
+  }
+
+  loginUrl({data}) {
+    const opts = {
+      client_id: this.options.clientId,
+      redirect_uri: this.redirectURI(),
+      state: randomString(16),
+      scope: data.scope || this.options.scope.join(' '),
+      code_challenge_method: this.options.codeChallengeMethod
+    }
+    const rawGatewayUrl = this.gatewayRootUrl() + '?' + encodeQuery(opts)
+    console.debug(data)
+    return (data && data.idpIds) ? (rawGatewayUrl + 'idp_ids[]=' + data.idpIds.join('&idp_ids[]=')) : rawGatewayUrl
   }
 
   async logout(){
