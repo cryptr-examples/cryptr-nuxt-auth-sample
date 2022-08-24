@@ -17,23 +17,6 @@ export default {
   },
   auth: {
     strategies: {
-      local: {
-        token: {
-          property: 'token',
-          global: true,
-          // required: true,
-          // type: 'Bearer'
-        },
-        user: {
-          property: 'user',
-          // autoFetch: true
-        },
-        endpoints: {
-          login: { url: '/api/auth/login', method: 'post' },
-          logout: { url: '/api/auth/logout', method: 'post' },
-          user: { url: '/api/auth/user', method: 'get' }
-        }
-      },
       cryptr: {
         scheme: 'oauth2',
         endpoints: {
@@ -64,26 +47,6 @@ export default {
         responseMode: '',
         acrValues: '',
         autoLogout: true
-      },
-      google: {
-        clientId: process.env.GOOGLE_API_CLIENT_ID,
-        codeChallengeMethod: '',
-        responseType: 'code',
-        redirectUri: 'http://localhost:3000/login',
-        // endpoints: {
-        //   token: 'http://localhost:8000/user/google/', // somm backend url to resolve your auth with google and give you the token back
-        //   userInfo: 'http://localhost:8000/auth/user/' // the endpoint to get the user info after you recived the token
-        // },
-      },
-      auth0: {
-        domain: process.env.AUTH0_DOMAIN,
-        clientId: process.env.AUTH0_CLIENT_ID,
-        audience: process.env.AUTH0_AUDIENCE,
-        scope: ['openid', 'profile', 'email', 'offline_access'],
-        responseType: 'code',
-        grantType: 'authorization_code',
-        codeChallengeMethod: 'S256',
-        // redirectUri: 'http://localhost:3000/login'
       },
     }
   },
