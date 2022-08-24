@@ -29,7 +29,7 @@ export default Vue.extend({
           let response = await this.$auth.refreshTokens()
           console.log(response)
         } catch (error) {
-          console.log('auth0 error', error)
+          console.log('cryptr error', error)
         }
       },
       async logOut() {
@@ -37,7 +37,7 @@ export default Vue.extend({
           let response = await this.$auth.logout()
           console.log(response)
         } catch (error) {
-          console.log('auth0 error', error)
+          console.log('cryptr error', error)
         }
       }
   }

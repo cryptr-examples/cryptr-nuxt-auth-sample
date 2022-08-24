@@ -13,6 +13,8 @@
 </template>
 
 <script>
+  const idpIds = "johns_moore_and_kihn_EVxTVHtTS8fR3SGoCux2yh,idkids_wJWKrT4bBD2NQKiJ9jzzRf,blockpulse_6Jc3TGatGmsHzexaRP5ZrE,shark_academy_qP7AXxnrPrf7CwWJgRhogj".split(',')
+
   export default {
     data() {
       return {
@@ -23,48 +25,26 @@
       }
     },
     methods: {
-      async userLogin() {
-        try {
-          let response = await this.$auth.loginWith('local', { data: this.login })
-          console.log(response)
-        } catch (err) {
-          console.log(err)
-        }
-      },
-      async googleLogin() {
-        try {
-          let response = await this.$auth.loginWith('google')
-          console.log(response)
-        } catch (error) {
-          console.log('google error', error)
-        }
-      },
-      async auth0Login() {
-        try {
-          let response = await this.$auth.loginWith('auth0')
-          console.log(response)
-        } catch (error) {
-          console.log('auth0 error', error)
-        }
-      },
       async cryptrLogin() {
         try {
-          let response = await this.$auth.loginWith('cryptr')
+          let response = await this.$auth.loginWith('cryptr', {data: {idpIds: idpIds}})
+          // let response = await this.$auth.loginWith('cryptr')
           console.log(response)
         } catch (error) {
-          console.log('auth0 error', error)
+          console.log('cryptr error', error)
         }
       },
       async checkUser() {
         console.log('user', this.$auth.user);
         console.log('loggedIn', this.$auth.loggedIn);
       },
+
       async refresh() {
         try {
           let response = await this.$auth.refreshTokens()
           console.log(response)
         } catch (error) {
-          console.log('auth0 error', error)
+          console.log('cryptr error', error)
         }
       }
     }
