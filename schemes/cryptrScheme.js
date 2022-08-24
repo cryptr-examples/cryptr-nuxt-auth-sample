@@ -1,9 +1,11 @@
 import {Oauth2Scheme} from '@nuxtjs/auth-next'
-import {encodeQuery, normalizePath, getProp, urlJoin, parseQuery, randomString} from './utils'
+import {encodeQuery, generateRandomString, normalizePath, getProp, urlJoin, parseQuery, randomString} from './utils'
 import requrl from 'requrl'
 
 
 const SLUG = "CryptrScheme"
+const PKCE_STORAGE_KEY = ".pkce_state"
+const VERIFIER_STORAGE_KEY = ".pkce_code_verifier"
 
 
 export default class CryptrScheme {
@@ -17,6 +19,8 @@ export default class CryptrScheme {
     this.options = Object.assign({}, DEFAULTS, options)
     // this.checkEndpoints()
     this.checkOptions()
+    this.token = null
+    this.refreshToken = null
     console.debug('options', this.options)
   }
 
@@ -82,6 +86,7 @@ export default class CryptrScheme {
     const hash = parseQuery(this.$auth.ctx.route.hash.substr(1))
     const parsedQuery = Object.assign({}, this.$auth.ctx.route.query, hash)
     console.debug('parsedQuery', parsedQuery)
+    console.debug('parsedQuery', Object.keys(parsedQuery))
 
     let token = parsedQuery[this.options.token.property]
     console.debug('token', token)
@@ -94,22 +99,37 @@ export default class CryptrScheme {
     console.debug('refreshToken', refreshToken)
 
     // TODO: Fetch state and verifier from db
+    const state = this.$auth.$storage.getUniversal(this.name + '.state')
+    this.$auth.$storage.setUniversal(this.name + '.state', null)
+    const pkceState = this.$auth.$storage.getUniversal(this.name + PKCE_STORAGE_KEY)
+    this.$auth.$storage.setUniversal(this.name + PKCE_STORAGE_KEY, null)
+    const codeVerifier = this.$auth.$storage.getUniversal(this.name + VERIFIER_STORAGE_KEY)
+    this.$auth.$storage.setUniversal(this.name + VERIFIER_STORAGE_KEY, null)
 
-    const domain = 'blockpulse'
+
+    const domain = parsedQuery['organization_domain'] || this.options.domain
     const signType = 'sso'
-    const response = await this.$auth.request({
-      method: 'post',
-      baseURL: this.options.baseUrl,
-      url: `/api/v1/tenants/${domain}/${this.options.clientId}/oauth/${signType}/client/token`,
-      data: encodeQuery({
+    const authId = parsedQuery['authorization_id']
+    const authCode = parsedQuery['authorization_code']
+    console.debug('authId', authId)
+    console.debug('authCode', authCode)
+    const requestData = {
+        authorization_id: authId,
+        code: authCode,
         client_id: this.options.clientId + '',
         redirect_uri: this.redirectURI(),
         responseType: this.options.resposeType,
         audience: this.options.audience,
         grant_type: this.options.grantType,
-        client_state: randomString(16),
-        code_verifier: randomString(16)
-      })
+        client_state: pkceState,
+        code_verifier: codeVerifier
+      }
+      console.debug(requestData)
+    const response = await this.$auth.request({
+      method: 'post',
+      baseURL: this.options.baseUrl,
+      url: `/api/v1/tenants/${domain}/${this.options.clientId}/oauth/${signType}/client/token`,
+      data: encodeQuery(requestData)
 
     })
 
@@ -122,6 +142,26 @@ export default class CryptrScheme {
       this.options.refreshToken.property
       )) || refreshToken
     console.debug('refreshToken', refreshToken)
+    console.debug('1')
+
+    if(!token || !token.length) {
+      return
+    }
+    console.debug('2')
+    console.debug('this.token')
+
+    this.token = token
+    console.debug('3')
+
+    if(refreshToken && refreshToken.length) {
+      this.refreshToken = refreshToken
+    }
+    console.debug('4')
+    console.debug('watchLoggedIn', this.$auth.options.watchLoggedIn)
+    if(this.$auth.options.watchLoggedIn) {
+      this.$auth.redirect('home', true)
+      return true
+    }
 
     return Promise.resolve();
   }
@@ -136,7 +176,7 @@ export default class CryptrScheme {
     console.debug('options', this.options)
     console.debug('endpoints', this.options.endpoints)
     await this.$auth.reset();
-    const url = this.loginUrl(params)
+    const url = await this.loginUrl(params)
     console.debug(url)
     window.location.replace(url)
   }
@@ -145,17 +185,39 @@ export default class CryptrScheme {
     return this.options.isDedicatedDomain ? this.options.baseUrl : this.options.baseUrl + '/t/' + this.options.domain
   }
 
-  loginUrl({data}) {
+  genAndStoreState() {
+    const state = generateRandomString()
+    this.$auth.$storage.setUniversal(this.name + PKCE_STORAGE_KEY, state)
+    return state
+  }
+
+  genAndStoreVerifier() {
+    const verifier = generateRandomString()
+    this.$auth.$storage.setUniversal(this.name + VERIFIER_STORAGE_KEY, verifier)
+    return verifier
+  }
+
+  async pkceChallengeFromVerifier(verifier) {
+    const hashed = await this._sha256(verifier)
+    return this._base64UrlEncode(hashed)
+  }
+
+  async loginUrl({data}) {
+    const codeVerifier = this.genAndStoreVerifier()
+    const codeChallenge = await this.pkceChallengeFromVerifier(codeVerifier)
     const opts = {
       client_id: this.options.clientId,
       redirect_uri: this.redirectURI(),
-      state: randomString(16),
+      client_state: this.genAndStoreState(),
+      nonce: randomString(10),
       scope: data.scope || this.options.scope.join(' '),
-      code_challenge_method: this.options.codeChallengeMethod
+      code_challenge_method: this.options.codeChallengeMethod,
+      code_challenge: codeChallenge
     }
+    this.$auth.$storage.setUniversal(this.name + '.state', opts.state)
     const rawGatewayUrl = this.gatewayRootUrl() + '?' + encodeQuery(opts)
     console.debug(data)
-    return (data && data.idpIds) ? (rawGatewayUrl + 'idp_ids[]=' + data.idpIds.join('&idp_ids[]=')) : rawGatewayUrl
+    return (data && data.idpIds) ? (rawGatewayUrl + '&idp_ids[]=' + data.idpIds.join('&idp_ids[]=')) : rawGatewayUrl
   }
 
   async logout(){
@@ -173,18 +235,22 @@ export default class CryptrScheme {
     return Promise.resolve()
   }
 
-  // constructor(
-  //   $auth: Auth,
-  //   options: SchemePartialOptions<Oauth2SchemeOptions>,
-  //   ...defaults: SchemePartialOptions<Oauth2SchemeOptions>[]
-  // ) {
-  //   console.debug("here")
-  //   super(
-  //     $auth,
-  //     options,
-  //     ...defaults,
-  //   )
-  // }
+   _sha256(plain) {
+    const encoder = new TextEncoder()
+    const data = encoder.encode(plain)
+    return window.crypto.subtle.digest('SHA-256', data)
+  }
+
+  _base64UrlEncode(str) {
+    // Convert the ArrayBuffer to string using Uint8 array to convert to what btoa accepts.
+    // btoa accepts chars only within ascii 0-255 and base64 encodes them.
+    // Then convert the base64 encoded to base64url encoded
+    //   (replace + with -, replace / with _, trim trailing =)
+    return btoa(String.fromCharCode.apply(null, new Uint8Array(str)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '')
+  }
 }
 
 const DEFAULTS = {
