@@ -1,14 +1,37 @@
 <template>
   <div>
-    <button v-on:click="cryptrLogin()" class="bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded">
-      Login Cryptr
-    </button>
-    <button v-on:click="checkUser()" class="bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded">
-      check user
-    </button>
-    <button v-on:click="refresh()" class="bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded">
-      Refresh
-    </button>
+    <div class="grid gap-4 grid-cols-2 mx-auto-items-center">
+      <button v-on:click="cryptrLogin()" v-if="!$auth.loggedIn" class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded">
+        Login Cryptr
+      </button>
+    </div>
+    <hr class="divider my-2" />
+    <div class="grid gap-4 grid-cols-2 mx-auto-items-center">
+      <button v-on:click="checkUser()" class="bg-yellow-500 hover:bg-yellow-400 text-white font-bold py-2 px-4 rounded">
+        check user
+      </button>
+      <button v-on:click="checkVuexState()" class="bg-purple-500 hover:bg-purple-400 text-white font-bold py-2 px-4 rounded">
+        check user
+      </button>
+    </div>
+    <div class="grid gap-4 grid-cols-4 mx-auto-items-center my-2">
+      <button v-on:click="refresh()" v-if="$auth.loggedIn" class="bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded">
+        Refresh
+      </button>
+    </div>
+    <div v-if="$auth.loggedIn" class="bg-indigo-100 border-t-4 border-indigo-500 rounded-b text-indigo-900 px-4 py-3 shadow-md mt-6" role="alert">
+      <div class="flex">
+        <div class="py-1"><svg class="fill-current h-6 w-6 text-indigo-500 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zm12.73-1.41A8 8 0 1 0 4.34 4.34a8 8 0 0 0 11.32 11.32zM9 11V9h2v6H9v-4zm0-6h2v2H9V5z"/></svg></div>
+        <div>
+          <p class="font-bold">User Info</p>
+          <pre class="rounded border border-indigo-700">
+            <code>
+              {{$auth.user}}
+            </code>
+          </pre>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -37,6 +60,9 @@
       async checkUser() {
         console.log('user', this.$auth.user);
         console.log('loggedIn', this.$auth.loggedIn);
+      },
+      async checkVuexState() {
+        console.debug('vuex state', this.$store.state.auth)
       },
 
       async refresh() {
