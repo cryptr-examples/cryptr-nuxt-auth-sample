@@ -1,4 +1,4 @@
-import {Oauth2Scheme} from '@nuxtjs/auth-next'
+import { Oauth2Scheme } from '@nuxtjs/auth-next'
 import {encodeQuery, generateRandomString, normalizePath, getProp, urlJoin, parseQuery, randomString} from './utils'
 import requrl from 'requrl'
 
@@ -6,7 +6,6 @@ import requrl from 'requrl'
 const SLUG = "CryptrScheme"
 const PKCE_STORAGE_KEY = ".pkce_state"
 const VERIFIER_STORAGE_KEY = ".pkce_code_verifier"
-
 
 export default class CryptrScheme {
 
@@ -22,14 +21,6 @@ export default class CryptrScheme {
     this.token = null
     this.refreshToken = null
     console.debug('options', this.options)
-  }
-
-  redirectURI() {
-    const basePath = this.$auth.ctx.base || ''
-    const path = normalizePath(
-      basePath + '/' + this.$auth.options.redirect.callback
-    ) // Don't pass in context since we want the base path
-    return this.options.redirectUri || urlJoin(requrl(this.req), path)
   }
 
   checkOptions() {
@@ -181,6 +172,29 @@ export default class CryptrScheme {
     window.location.replace(url)
   }
 
+  async logout(){
+    console.debug('logout', this)
+    return this.$auth.reset()
+  }
+
+  async reset() {
+    console.debug('reset')
+    return Promise.resolve()
+  }
+
+  async refreshToken() {
+    console.debug('refreshToken')
+    return Promise.resolve()
+  }
+
+  redirectURI() {
+    const basePath = this.$auth.ctx.base || ''
+    const path = normalizePath(
+      basePath + '/' + this.$auth.options.redirect.callback
+    ) // Don't pass in context since we want the base path
+    return this.options.redirectUri || urlJoin(requrl(this.req), path)
+  }
+
   gatewayRootUrl() {
     return this.options.isDedicatedDomain ? this.options.baseUrl : this.options.baseUrl + '/t/' + this.options.domain
   }
@@ -220,22 +234,9 @@ export default class CryptrScheme {
     return (data && data.idpIds) ? (rawGatewayUrl + '&idp_ids[]=' + data.idpIds.join('&idp_ids[]=')) : rawGatewayUrl
   }
 
-  async logout(){
-      console.debug('logout', this)
-      return this.$auth.reset()
-  }
 
-  async reset() {
-    console.debug('reset')
-    return Promise.resolve()
-  }
 
-  async refreshToken() {
-    console.debug('refreshToken')
-    return Promise.resolve()
-  }
-
-   _sha256(plain) {
+  _sha256(plain) {
     const encoder = new TextEncoder()
     const data = encoder.encode(plain)
     return window.crypto.subtle.digest('SHA-256', data)
