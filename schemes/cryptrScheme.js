@@ -6,21 +6,20 @@ import requrl from 'requrl'
 const SLUG = "CryptrScheme"
 const PKCE_STORAGE_KEY = ".pkce_state"
 const VERIFIER_STORAGE_KEY = ".pkce_code_verifier"
+const AUTH_STATE_KEY = ".state"
 
 export default class CryptrScheme {
 
   constructor(auth, options) {
     this.$auth = auth
     this.name = options.name
-    console.debug('cryptr scheme constructor')
-    // console.debug('this.name', this.name)
+    this.debug('cryptr scheme constructor')
 
     this.options = Object.assign({}, DEFAULTS, options)
-    // this.checkEndpoints()
     this.checkOptions()
     this.token = null
     this.refreshToken = null
-    console.debug('options', this.options)
+    this.debug('options', this.options)
   }
 
   checkOptions() {
@@ -40,19 +39,11 @@ export default class CryptrScheme {
     return this.options.hasOwnProperty('clientId')
   }
 
-  // checkEndpoints() {
-  //   console.debug('checkEndpoints', this.options.endpoints)
-  //   if(this.options.endpoints !== undefined) {
-  //     return
-  //   }
-  //   console.debug('endpoints must be configured')
-  //   throw new Error(`${SLUG} endpoints must be configured`)
-  // }
-
   async mounted() {
-    console.debug("mounted")
+    this.debug("mounted")
+    // const { tokenExpired, refreshTokenExpired } = this.check(true)
     const redirected = await this._handleCallback()
-    console.debug("redirected", redirected)
+    this.debug("redirected", redirected)
     if(!redirected) {
       return this.$auth.fetchUserOnce()
     }
@@ -60,7 +51,7 @@ export default class CryptrScheme {
 
 
   async _handleCallback() {
-    console.debug('handleCallback')
+    this.debug('handleCallback')
     if (
       this.$auth.options.redirect &&
       normalizePath(this.$auth.ctx.route.path, this.$auth.ctx) !==
@@ -72,27 +63,33 @@ export default class CryptrScheme {
     if (process.server) {
       return
     }
-    console.debug("callback guard excluded")
+    this.debug("callback guard excluded")
 
     const hash = parseQuery(this.$auth.ctx.route.hash.substr(1))
     const parsedQuery = Object.assign({}, this.$auth.ctx.route.query, hash)
-    console.debug('parsedQuery', parsedQuery)
-    console.debug('parsedQuery', Object.keys(parsedQuery))
+    this.debug('parsedQuery', parsedQuery)
+    this.debug('parsedQuery', Object.keys(parsedQuery))
 
     let token = parsedQuery[this.options.token.property]
-    console.debug('token', token)
+    this.debug('token', token)
 
     let refreshToken
 
     if (this.options.refreshToken.property) {
       refreshToken = parsedQuery[this.options.refreshToken.property]
     }
-    console.debug('refreshToken', refreshToken)
+    this.debug('refreshToken', refreshToken)
 
     // TODO: Fetch state and verifier from db
-    const state = this.$auth.$storage.getUniversal(this.name + '.state')
-    this.$auth.$storage.setUniversal(this.name + '.state', null)
+    const state = this.$auth.$storage.getUniversal(this.name + AUTH_STATE_KEY)
+    this.$auth.$storage.setUniversal(this.name + AUTH_STATE_KEY, null)
+
     const pkceState = this.$auth.$storage.getUniversal(this.name + PKCE_STORAGE_KEY)
+    this.debug('pkceState', pkceState)
+    if (!pkceState || !pkceState.length) {
+      console.info(SLUG, 'Not going forward because pkce state unknown')
+      return
+    }
     this.$auth.$storage.setUniversal(this.name + PKCE_STORAGE_KEY, null)
     const codeVerifier = this.$auth.$storage.getUniversal(this.name + VERIFIER_STORAGE_KEY)
     this.$auth.$storage.setUniversal(this.name + VERIFIER_STORAGE_KEY, null)
@@ -102,8 +99,8 @@ export default class CryptrScheme {
     const signType = 'sso'
     const authId = parsedQuery['authorization_id']
     const authCode = parsedQuery['authorization_code']
-    console.debug('authId', authId)
-    console.debug('authCode', authCode)
+    this.debug('authId', authId)
+    this.debug('authCode', authCode)
     const requestData = {
         authorization_id: authId,
         code: authCode,
@@ -115,7 +112,7 @@ export default class CryptrScheme {
         client_state: pkceState,
         code_verifier: codeVerifier
       }
-      console.debug(requestData)
+      this.debug(requestData)
     const response = await this.$auth.request({
       method: 'post',
       baseURL: this.options.baseUrl,
@@ -124,31 +121,26 @@ export default class CryptrScheme {
 
     })
 
-    console.debug(response)
+    this.debug(response)
     token = getProp(response.data, this.options.token.property) || token
-    console.debug('token', token)
+    this.debug('token', token)
     refreshToken =
     (getProp(
       response.data,
       this.options.refreshToken.property
       )) || refreshToken
-    console.debug('refreshToken', refreshToken)
-    console.debug('1')
+    this.debug('refreshToken', refreshToken)
 
     if(!token || !token.length) {
       return
     }
-    console.debug('2')
-    console.debug('this.token')
 
     this.token = token
-    console.debug('3')
 
     if(refreshToken && refreshToken.length) {
       this.refreshToken = refreshToken
     }
-    console.debug('4')
-    console.debug('watchLoggedIn', this.$auth.options.watchLoggedIn)
+    this.debug('watchLoggedIn', this.$auth.options.watchLoggedIn)
     if(this.$auth.options.watchLoggedIn) {
       this.$auth.redirect('home', true)
       return true
@@ -158,32 +150,57 @@ export default class CryptrScheme {
   }
 
   async login(params) {
-    console.debug('login')
-    console.debug('params', params)
+    this.debug('login')
+    this.debug('params', params)
     if(params) {
       const { data } = params
-      console.debug(data)
+      this.debug(data)
     }
-    console.debug('options', this.options)
-    console.debug('endpoints', this.options.endpoints)
+    this.debug('options', this.options)
+    this.debug('endpoints', this.options.endpoints)
     await this.$auth.reset();
     const url = await this.loginUrl(params)
-    console.debug(url)
+    this.debug(url)
     window.location.replace(url)
   }
 
   async logout(){
-    console.debug('logout', this)
+    this.debug('logout', this)
     return this.$auth.reset()
   }
 
   async reset() {
-    console.debug('reset')
+    this.debug('reset')
     return Promise.resolve()
   }
 
+  async fetchUser() {
+    this.debug("fetchUser")
+    this.debug("check valid", this.check().valid)
+    if (!this.check().valid) {
+      return
+    }
+
+    if (!this.options.endpoints.userInfo) {
+      this.$auth.setUser({})
+      return
+    }
+
+    const response = await this.$auth.requestWith(this.name, {
+      url: this.options.endpoints.userInfo
+    })
+
+    this.$auth.setUser(getProp(response.data, this.options.user.property))
+  }
+
+  // HELPERS
+
+  debug(...args) {
+    console.debug(SLUG, ...args)
+  }
+
   async refreshToken() {
-    console.debug('refreshToken')
+    this.debug('refreshToken')
     return Promise.resolve()
   }
 
@@ -228,9 +245,9 @@ export default class CryptrScheme {
       code_challenge_method: this.options.codeChallengeMethod,
       code_challenge: codeChallenge
     }
-    this.$auth.$storage.setUniversal(this.name + '.state', opts.state)
+    this.$auth.$storage.setUniversal(this.name + AUTH_STATE_KEY, opts.state)
     const rawGatewayUrl = this.gatewayRootUrl() + '?' + encodeQuery(opts)
-    console.debug(data)
+    this.debug('provided options for login', data)
     return (data && data.idpIds) ? (rawGatewayUrl + '&idp_ids[]=' + data.idpIds.join('&idp_ids[]=')) : rawGatewayUrl
   }
 
