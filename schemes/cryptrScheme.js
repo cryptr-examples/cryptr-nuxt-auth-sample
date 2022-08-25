@@ -196,18 +196,16 @@ export default class CryptrScheme {
 
   async fetchUser() {
     this.debug('fetchUser')
-    this.debug('fetchUser', 'check valid', this.check().valid)
-    // if (!this.check().valid) {
-    //   return
-    // }
+    if (!this.check().valid) {
+      this.debug('fetchUser', 'stop because check not valid')
+      return
+    }
 
     // if (!this.options.endpoints.userInfo) {
     //   this.$auth.setUser({})
     //   return
     // }
     const url = this.userInfoUrl()
-    this.debug('fetchUser', 'url', url)
-    this.debug('fetchUser', 'this.token', this.token)
 
     const response = await this.$auth.request({
       method: 'get',
@@ -218,9 +216,6 @@ export default class CryptrScheme {
       }
     })
 
-    this.debug('fetchUser', 'response', response)
-    this.debug('fetchUser', 'response.data', response.data)
-    this.debug('fetchUser', 'user value', this.options.user.property)
     this.debug('fetchUser', 'user value', getProp(response.data, this.options.user.property))
 
     this.$auth.setUser(getProp(response.data, this.options.user.property))
@@ -235,50 +230,44 @@ export default class CryptrScheme {
       refreshTokenExpired: false,
       isRefreshable: true
     }
-    this.debug('check', checkStatus, response)
 
     // Sync tokens
     const token = this.token.sync()
-    this.debug('check', 'token', token)
     this.refreshToken.sync()
-    this.debug('check', '1')
 
     // Token is required but not available
-    if (!this.token) {
-      this.debug('check', '2')
+    if (!token) {
+      this.debug('check', 'no token', response)
       return response
     }
-    this.debug('check', '3')
 
     // Check status wasn't enabled, let it pass
     if (!checkStatus) {
-      this.debug('check', '$')
       response.valid = true
+      this.debug('check', 'no check required', response)
       return response
     }
-    this.debug('check', '5')
 
     // Get status
     const tokenStatus = this.token.status()
     const refreshTokenStatus = this.refreshToken.status()
-    this.debug('check', '6')
 
     // Refresh token has expired. There is no way to refresh. Force reset.
     if (refreshTokenStatus.expired()) {
-      this.debug('check', 'refresh token expired')
       response.refreshTokenExpired = true
+      this.debug('check', 'refresh token expired', response)
       return response
     }
 
     // Token has expired, Force reset.
     if (tokenStatus.expired()) {
-      this.debug('check', 'token expired')
       response.tokenExpired = true
+      this.debug('check', 'token expired', response)
       return response
     }
-    this.debug('check', 'allchecks good')
 
     response.valid = true
+    this.debug('check', 'allchecks good', response)
     return response
   }
 
@@ -320,8 +309,9 @@ export default class CryptrScheme {
     return this._base64UrlEncode(hashed)
   }
 
-  userInfoUrl(tenant_domain = 'blockpulse') {
-    this.debug('userInfoUrl', 'tenant_domain', tenant_domain)
+  userInfoUrl() {
+    const refresh = this.refreshToken.get()
+    const tenant_domain = (refresh && refresh.length) ? refresh.split('.')[0] : this.options.domain
     const userInfoBaseUrl =  [this.options.baseUrl, 't', tenant_domain, 'userinfo'].join('/')
     return userInfoBaseUrl + '?' + encodeQuery({client_id: this.options.clientId})
   }
@@ -367,12 +357,17 @@ export default class CryptrScheme {
 const DEFAULTS = {
   token: {
     property: 'access_token',
-    type: 'Bearer',
-    maxAge: 1800
+    // type: 'Bearer',
+    name: 'Authorization',
+    maxAge: 1800,
+    prefix: '_token.',
+    expirationPrefix: '_token_expiration.'
   },
   refreshToken: {
     property: 'refresh_token',
-    maxAge: 60 * 60 * 24 * 30
+    maxAge: 60 * 60 * 24 * 30,
+    prefix: '_refresh_token.',
+    expirationPrefix: '_refresh_token_expiration.'
   },
   codeChallengeMethod: 'S256',
   isDedicatedDomain: false,
