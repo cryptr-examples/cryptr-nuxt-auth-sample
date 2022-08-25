@@ -2,6 +2,8 @@ import { Oauth2Scheme } from '@nuxtjs/auth-next'
 import {encodeQuery, generateRandomString, normalizePath, getProp, urlJoin, parseQuery, randomString} from './utils'
 import requrl from 'requrl'
 import { RefreshToken } from './refresh-token'
+import { RefreshController } from './refresh-controller'
+import { RequestHandler } from './request-handler'
 import { Token } from './token'
 
 
@@ -24,12 +26,11 @@ export default class CryptrScheme {
     this.refreshToken = new RefreshToken(this, this.$auth.$storage)
     this.debug('options', this.options)
 
-    // TODO: init controller and handlers
     // Initialize Refresh Controller
-    // this.refreshController = new RefreshController(this)
+    this.refreshController = new RefreshController(this)
 
     // Initialize Request Handler
-    // this.requestHandler = new RequestHandler(this, this.$auth.ctx.$axios)
+    this.requestHandler = new RequestHandler(this, this.$auth.ctx.$axios)
   }
 
   checkOptions() {
@@ -187,7 +188,6 @@ export default class CryptrScheme {
   }
 
   async logout(){
-    // TODO handle revoke + slo
     this.debug('logout', this)
     const refresh = this.refreshToken.get()
     const path = this.revokeTokenPath(refresh)
@@ -213,7 +213,7 @@ export default class CryptrScheme {
       this.debug('logout', 'sloCode', sloCode)
       if(sloCode && sloCode.length) {
         const sloAfterRevokeUrl = this.sloAfterRevokeTokenUrl(sloCode, this.domainFromRefresh(refresh), this.redirectURI() || this.options.audience)
-        window.location.replace(sloAfterRevokeUrl)
+        sloAfterRevokeUrl && sloAfterRevokeUrl.length && window.location.replace(sloAfterRevokeUrl)
       }
     } else {
       console.error(SLUG, 'cannot log out')
