@@ -180,10 +180,44 @@ export default class CryptrScheme {
     window.location.replace(url)
   }
 
+  revokeTokenPath(refresh = this.refreshToken.get()) {
+    this.debug('revokeTokenPath', 'refresh', refresh)
+    const domain = refresh && refresh.length ? refresh.split('.')[0] : this.options.domain
+    return [this.options.baseUrl, 'api/v1/tenants', domain, this.options.clientId, 'oauth/token/revoke'].join('/')
+  }
+
   async logout(){
     // TODO handle revoke + slo
     this.debug('logout', this)
-    return this.$auth.reset()
+    const refresh = this.refreshToken.get()
+    const path = this.revokeTokenPath(refresh)
+    this.debug('logout', 'path', path)
+    const revokePayload = {
+      token: refresh,
+      token_type_hint: 'refresh_token'
+    }
+    this.debug('logout', 'revokePayload', revokePayload)
+    const response = await this.$auth.request({
+      method: 'post',
+      baseURL: this.options.baseUrl,
+      url: path,
+      data: revokePayload
+
+    })
+    this.debug('logout', 'response', response)
+    const revokedAt = getProp(response.data, 'revoked_at')
+    if(revokedAt && revokedAt.length) {
+      this.debug('logout', 'token revoked')
+      this.$auth.reset()
+      const sloCode = getProp(response.data, 'slo_code')
+      this.debug('logout', 'sloCode', sloCode)
+      if(sloCode && sloCode.length) {
+        const sloAfterRevokeUrl = this.sloAfterRevokeTokenUrl(sloCode, this.domainFromRefresh(refresh), this.redirectURI() || this.options.audience)
+        window.location.replace(sloAfterRevokeUrl)
+      }
+    } else {
+      console.error(SLUG, 'cannot log out')
+    }
   }
 
   async reset() {
@@ -222,6 +256,29 @@ export default class CryptrScheme {
   }
 
   // HELPERS
+
+  domainFromRefresh(refresh = this.refreshToken.get()) {
+    return refresh && refresh.length ? refresh.split('.')[0] : this.options.domain
+  }
+
+  revokeTokenPath(refresh = this.refreshToken.get()) {
+    this.debug('revokeTokenPath', 'refresh', refresh)
+    const domain = this.domainFromRefresh(refresh)
+    return [this.options.baseUrl, 'api/v1/tenants', domain, this.options.clientId, 'oauth/token/revoke'].join('/')
+  }
+
+  sloAfterRevokeTokenUrl(
+    sloCode,
+    domain,
+    targetUrl,
+  ){
+    const sloParams = {
+      slo_code: sloCode,
+      target_url: targetUrl,
+    }
+    this.debug('slo after revoke', 'will  redirect to', targetUrl)
+    return [this.options.baseUrl, 'api/v1/tenants', domain, this.options.clientId, 'oauth/token/slo-after-revoke-token'].join('/') + '?' + encodeQuery(sloParams)
+  }
 
     check(checkStatus = false) {
     const response = {

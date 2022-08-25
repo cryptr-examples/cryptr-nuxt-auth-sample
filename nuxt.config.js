@@ -22,6 +22,7 @@ export default {
         scheme: '~schemes/cryptrScheme.js',
         baseUrl: process.env.CRYPTR_BASE_URL,
         domain: 'cryptr',
+        audience: 'http://localhost:3000',
         // endpoints: {
         //   authorization: `${process.env.CRYPTR_BASE_URL}/?idp_ids[]=${process.env.CRYPTR_IDP_IDS && process.env.CRYPTR_IDP_IDS.split(',').join("&idp_ids[]=")}`,
         //   token: `${process.env.CRYPTR_BASE_URL}/api/v1/tenants/blockpulse/${process.env.CRYPTR_CLIENT_ID}/oauth/sso/client/token`,
