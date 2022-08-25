@@ -122,12 +122,13 @@ export default class CryptrScheme {
         audience: this.options.audience,
         grant_type: this.options.grantType,
         client_state: pkceState,
-        code_verifier: codeVerifier
+        code_verifier: codeVerifier,
+        nonce: randomString(10),
       }
     const response = await this.$auth.request({
       method: 'post',
       baseURL: this.options.baseUrl,
-      url: `/api/v1/tenants/${domain}/${this.options.clientId}/oauth/${signType}/client/token`,
+      url: `/api/v1/tenants/${domain}/${this.options.clientId}/${pkceState}/oauth/${signType}/client/${authId}/token`,
       data: encodeQuery(requestData)
 
     })
