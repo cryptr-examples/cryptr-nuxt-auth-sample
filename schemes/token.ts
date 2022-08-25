@@ -20,12 +20,13 @@ export class Token {
   }
 
   set(tokenValue: string | boolean): string | boolean {
+    console.debug('Token class', 'set', tokenValue)
     const token = addTokenPrefix(tokenValue, this.scheme.options.token.type)
 
     this._setToken(token)
     this._updateExpiration(token)
 
-    if (typeof token === 'string') {
+    if (this.scheme.requestHandler && typeof token === 'string') {
       this.scheme.requestHandler.setHeader(token)
     }
 
@@ -36,7 +37,7 @@ export class Token {
     const token = this._syncToken()
     this._syncExpiration()
 
-    if (typeof token === 'string') {
+    if (this.scheme.requestHandler && typeof token === 'string') {
       this.scheme.requestHandler.setHeader(token)
     }
 

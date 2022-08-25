@@ -44,7 +44,14 @@ export default class CryptrScheme {
 
   async mounted() {
     this.debug("mounted")
-    // const { tokenExpired, refreshTokenExpired } = this.check(true)
+    const { tokenExpired, refreshTokenExpired } = this.check(true)
+    this.debug('mounted', tokenExpired)
+    this.debug('mounted', refreshTokenExpired)
+    // Force reset if refresh token has expired
+    // Or if `autoLogout` is enabled and token has expired
+    if (refreshTokenExpired || (tokenExpired && this.options.autoLogout)) {
+      this.$auth.reset()
+    }
     const redirected = await this._handleCallback()
     this.debug("redirected", redirected)
     if(!redirected) {
@@ -77,17 +84,17 @@ export default class CryptrScheme {
 
     const hash = parseQuery(this.$auth.ctx.route.hash.substr(1))
     const parsedQuery = Object.assign({}, this.$auth.ctx.route.query, hash)
-    this.debug('_handleCallback', 'parsedQuery', parsedQuery)
+    // this.debug('_handleCallback', 'parsedQuery', parsedQuery)
 
     let token = parsedQuery[this.options.token.property]
-    this.debug('_handleCallback', 'token', token)
+    // this.debug('_handleCallback', 'token', token)
 
     let refreshToken
 
     if (this.options.refreshToken.property) {
       refreshToken = parsedQuery[this.options.refreshToken.property]
     }
-    this.debug('_handleCallback', 'refreshToken', refreshToken)
+    // this.debug('_handleCallback', 'refreshToken', refreshToken)
 
     this.$auth.$storage.setUniversal(this.name + PKCE_STORAGE_KEY, null)
     const codeVerifier = this.$auth.$storage.getUniversal(this.name + VERIFIER_STORAGE_KEY)
@@ -98,8 +105,8 @@ export default class CryptrScheme {
     const signType = 'sso'
     const authId = parsedQuery['authorization_id']
     const authCode = parsedQuery['authorization_code']
-    this.debug('_handleCallback', 'authId', authId)
-    this.debug('_handleCallback', 'authCode', authCode)
+    // this.debug('_handleCallback', 'authId', authId)
+    // this.debug('_handleCallback', 'authCode', authCode)
     const requestData = {
         authorization_id: authId,
         code: authCode,
@@ -111,7 +118,7 @@ export default class CryptrScheme {
         client_state: pkceState,
         code_verifier: codeVerifier
       }
-      this.debug('_handleCallback', requestData)
+    // this.debug('_handleCallback', 'requestData', requestData)
     const response = await this.$auth.request({
       method: 'post',
       baseURL: this.options.baseUrl,
@@ -120,7 +127,7 @@ export default class CryptrScheme {
 
     })
 
-    this.debug('_handleCallback', response)
+    this.debug('_handleCallback', 'token response', response)
     token = getProp(response.data, this.options.token.property) || token
     this.debug('_handleCallback', 'token', token)
     refreshToken =
@@ -131,15 +138,16 @@ export default class CryptrScheme {
     this.debug('_handleCallback', 'refreshToken', refreshToken)
 
     if(!token || !token.length) {
+      console.warn('no token found')
       return
     }
 
     this.debug('_handelCallback', this.token)
-    this.token = token
+    this.token.set(token)
 
     this.debug('_handelCallback', this.refreshToken)
     if(refreshToken && refreshToken.length) {
-      this.refreshToken = refreshToken
+      this.refreshToken.set(refreshToken)
     }
     this.debug('_handleCallback', 'watchLoggedIn', this.$auth.options.watchLoggedIn)
     if(this.$auth.options.watchLoggedIn) {
@@ -166,6 +174,7 @@ export default class CryptrScheme {
   }
 
   async logout(){
+    // TODO handle revoke + slo
     this.debug('logout', this)
     return this.$auth.reset()
   }
@@ -180,7 +189,7 @@ export default class CryptrScheme {
 
   async fetchUser() {
     this.debug('fetchUser')
-    // this.debug('fetchUser', 'check valid', this.check().valid)
+    this.debug('fetchUser', 'check valid', this.check().valid)
     // if (!this.check().valid) {
     //   return
     // }
@@ -222,8 +231,8 @@ export default class CryptrScheme {
     this.debug('check', checkStatus, response)
 
     // Sync tokens
-    // const token = this.token.sync()
-    // this.debug('check', 'token', token)
+    const token = this.token.sync()
+    this.debug('check', 'token', token)
     this.refreshToken.sync()
     this.debug('check', '1')
 
@@ -245,18 +254,22 @@ export default class CryptrScheme {
     // Get status
     const tokenStatus = this.token.status()
     const refreshTokenStatus = this.refreshToken.status()
+    this.debug('check', '6')
 
     // Refresh token has expired. There is no way to refresh. Force reset.
     if (refreshTokenStatus.expired()) {
+      this.debug('check', 'refresh token expired')
       response.refreshTokenExpired = true
       return response
     }
 
     // Token has expired, Force reset.
     if (tokenStatus.expired()) {
+      this.debug('check', 'token expired')
       response.tokenExpired = true
       return response
     }
+    this.debug('check', 'allchecks good')
 
     response.valid = true
     return response
