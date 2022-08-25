@@ -1,6 +1,8 @@
 import { Oauth2Scheme } from '@nuxtjs/auth-next'
 import {encodeQuery, generateRandomString, normalizePath, getProp, urlJoin, parseQuery, randomString} from './utils'
 import requrl from 'requrl'
+import { RefreshToken } from './refresh-token'
+import { Token } from './token'
 
 
 const SLUG = "CryptrScheme"
@@ -18,8 +20,8 @@ export default class CryptrScheme {
 
     this.options = Object.assign({}, DEFAULTS, options)
     this.checkOptions()
-    this.token = null
-    this.refreshToken = null
+    this.token = new Token(this, this.$auth.$storage)
+    this.refreshToken = new RefreshToken(this, this.$auth.$storage)
     this.debug('options', this.options)
   }
 
@@ -132,9 +134,10 @@ export default class CryptrScheme {
       return
     }
 
+    this.debug('_handelCallback', this.token)
     this.token = token
-    console.log(token)
 
+    this.debug('_handelCallback', this.refreshToken)
     if(refreshToken && refreshToken.length) {
       this.refreshToken = refreshToken
     }
@@ -218,7 +221,7 @@ export default class CryptrScheme {
     // Sync tokens
     // const token = this.token.sync()
     // this.debug('check', 'token', token)
-    // this.refreshToken.sync()
+    this.refreshToken.sync()
     this.debug('check', '1')
 
     // Token is required but not available

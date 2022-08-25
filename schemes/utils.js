@@ -97,4 +97,19 @@ export function generateRandomString() {
     ''
   )
 }
+export function addTokenPrefix(
+  token,
+  tokenType
+) {
+  if (
+    !token ||
+    !tokenType ||
+    typeof token !== 'string' ||
+    token.startsWith(tokenType)
+  ) {
+    return token
+  }
+
+  return tokenType + ' ' + token
+}
 
