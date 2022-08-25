@@ -1,4 +1,4 @@
-import { Oauth2Scheme } from '@nuxtjs/auth-next'
+import { ExpiredAuthSessionError, Oauth2Scheme } from '@nuxtjs/auth-next'
 import {encodeQuery, generateRandomString, normalizePath, getProp, urlJoin, parseQuery, randomString} from './utils'
 import requrl from 'requrl'
 import { RefreshToken } from './refresh-token'
@@ -218,6 +218,37 @@ export default class CryptrScheme {
     }
   }
 
+  async refreshTokens() {
+    this.debug("refreshTokens")
+    const refreshToken = this.refreshToken.get()
+
+    if(!refreshToken) return;
+
+    const refreshTokenStatus = this.refreshToken.status()
+    if(refreshTokenStatus.expired()) {
+      this.$auth.reset()
+      throw new ExpiredAuthSessionError()
+    }
+    const pkceState = randomString(20)
+    const response = await this.$auth.request({
+      method: 'post',
+      url: ['api/v1/tenants', this.domainFromRefresh(refreshToken), this.options.clientId, pkceState, 'oauth/client/token'].join('/'),
+      baseURL: this.options.baseUrl,
+      data: encodeQuery({
+        client_id: this.options.clientId,
+        grant_type: 'refresh_token',
+        nonce: randomString(10),
+        refresh_token: refreshToken,
+      })
+    })
+
+    this.debug('refreshTokens', response)
+    this.updateTokens(response)
+    this.debug('refreshTokens', response)
+
+    return response;
+  }
+
   async reset() {
     this.debug('reset')
     this.$auth.setUser(false)
@@ -250,6 +281,21 @@ export default class CryptrScheme {
   }
 
   // HELPERS
+
+  updateTokens(response) {
+    const token = getProp(response.data, this.options.token.property)
+    const refreshToken = getProp(
+      response.data,
+      this.options.refreshToken.property
+    )
+
+    this.token.set(token)
+
+    if (refreshToken) {
+      this.refreshToken.set(refreshToken)
+    }
+  }
+
 
   domainFromRefresh(refresh = this.refreshToken.get()) {
     return refresh && refresh.length ? refresh.split('.')[0] : this.options.domain

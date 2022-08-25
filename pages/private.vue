@@ -28,6 +28,7 @@ export default Vue.extend({
       },
       async refresh() {
         try {
+          console.log('private refresh')
           let response = await this.$auth.refreshTokens()
           console.log(response)
         } catch (error) {

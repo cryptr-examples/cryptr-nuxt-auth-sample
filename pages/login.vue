@@ -11,7 +11,7 @@
         check user
       </button>
       <button v-on:click="checkVuexState()" class="bg-purple-500 hover:bg-purple-400 text-white font-bold py-2 px-4 rounded">
-        check user
+        check vuex state
       </button>
     </div>
     <div class="grid gap-4 grid-cols-4 mx-auto-items-center my-2">
