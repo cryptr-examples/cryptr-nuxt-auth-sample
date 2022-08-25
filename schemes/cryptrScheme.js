@@ -167,7 +167,7 @@ export default class CryptrScheme {
   async login(params) {
     this.debug('login')
     this.debug('params', params)
-    if(params) {
+    if(params !== undefined) {
       const { data } = params
       this.debug(data)
     }
@@ -367,7 +367,7 @@ export default class CryptrScheme {
     return userInfoBaseUrl + '?' + encodeQuery({client_id: this.options.clientId})
   }
 
-  async loginUrl({data}) {
+  async loginUrl(params) {
     const codeVerifier = this.genAndStoreVerifier()
     const codeChallenge = await this.pkceChallengeFromVerifier(codeVerifier)
     const opts = {
@@ -375,14 +375,18 @@ export default class CryptrScheme {
       redirect_uri: this.redirectURI(),
       client_state: this.genAndStoreState(),
       nonce: randomString(10),
-      scope: data.scope || this.options.scope.join(' '),
+      scope: (params && params.data)  ? params.data.scope : this.options.scope.join(' '),
       code_challenge_method: this.options.codeChallengeMethod,
       code_challenge: codeChallenge
     }
     this.$auth.$storage.setUniversal(this.name + AUTH_STATE_KEY, opts.state)
     const rawGatewayUrl = this.gatewayRootUrl() + '?' + encodeQuery(opts)
-    this.debug('provided options for login', data)
-    return (data && data.idpIds) ? (rawGatewayUrl + '&idp_ids[]=' + data.idpIds.join('&idp_ids[]=')) : rawGatewayUrl
+    if(params && params.data) {
+      const { data } = params
+      this.debug('provided options for login', data)
+      return (data && data.idpIds) ? (rawGatewayUrl + '&idp_ids[]=' + data.idpIds.join('&idp_ids[]=')) : rawGatewayUrl
+    }
+    return rawGatewayUrl
   }
 
 

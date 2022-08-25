@@ -27,8 +27,8 @@
     methods: {
       async cryptrLogin() {
         try {
-          let response = await this.$auth.loginWith('cryptr', {data: {idpIds: idpIds}})
-          // let response = await this.$auth.loginWith('cryptr')
+          // let response = await this.$auth.loginWith('cryptr', {data: {idpIds: idpIds}})
+          let response = await this.$auth.loginWith('cryptr')
           console.log(response)
         } catch (error) {
           console.log('cryptr error', error)
