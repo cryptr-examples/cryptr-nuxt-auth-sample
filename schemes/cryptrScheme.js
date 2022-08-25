@@ -23,6 +23,13 @@ export default class CryptrScheme {
     this.token = new Token(this, this.$auth.$storage)
     this.refreshToken = new RefreshToken(this, this.$auth.$storage)
     this.debug('options', this.options)
+
+    // TODO: init controller and handlers
+    // Initialize Refresh Controller
+    // this.refreshController = new RefreshController(this)
+
+    // Initialize Request Handler
+    // this.requestHandler = new RequestHandler(this, this.$auth.ctx.$axios)
   }
 
   checkOptions() {
