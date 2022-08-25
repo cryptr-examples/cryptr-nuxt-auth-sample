@@ -113,8 +113,6 @@ export default class CryptrScheme {
     const signType = 'sso'
     const authId = parsedQuery['authorization_id']
     const authCode = parsedQuery['authorization_code']
-    // this.debug('_handleCallback', 'authId', authId)
-    // this.debug('_handleCallback', 'authCode', authCode)
     const requestData = {
         authorization_id: authId,
         code: authCode,
@@ -126,7 +124,6 @@ export default class CryptrScheme {
         client_state: pkceState,
         code_verifier: codeVerifier
       }
-    // this.debug('_handleCallback', 'requestData', requestData)
     const response = await this.$auth.request({
       method: 'post',
       baseURL: this.options.baseUrl,
@@ -235,10 +232,6 @@ export default class CryptrScheme {
       return
     }
 
-    // if (!this.options.endpoints.userInfo) {
-    //   this.$auth.setUser({})
-    //   return
-    // }
     const url = this.userInfoUrl()
 
     const response = await this.$auth.request({
