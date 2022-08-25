@@ -44,7 +44,9 @@ export class Token {
   }
 
   reset(): void {
-    this.scheme.requestHandler.clearHeader()
+    if (this.scheme.requestHandler) {
+      this.scheme.requestHandler.clearHeader()
+    }
     this._setToken(false)
     this._setExpiration(false)
   }

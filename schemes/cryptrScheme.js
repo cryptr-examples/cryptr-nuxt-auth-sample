@@ -172,7 +172,10 @@ export default class CryptrScheme {
 
   async reset() {
     this.debug('reset')
-    return Promise.resolve()
+    this.$auth.setUser(false)
+    this.token.reset()
+    this.refreshToken.reset()
+    // this.requestHandler.reset()
   }
 
   async fetchUser() {
