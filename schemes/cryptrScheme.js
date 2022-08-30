@@ -168,8 +168,8 @@ export default class CryptrScheme {
     this.debug('login')
     this.debug('params', params)
     if(params !== undefined) {
-      const { data } = params
-      this.debug(data)
+      const { attrs } = params
+      this.debug('login', 'attrs', attrs)
     }
     this.debug('options', this.options)
     this.debug('endpoints', this.options.endpoints)
@@ -429,16 +429,16 @@ export default class CryptrScheme {
     }
     this.$auth.$storage.setUniversal(this.name + AUTH_STATE_KEY, opts.state)
     const rawGatewayUrl = this.gatewayRootUrl() + '?' + encodeQuery(opts)
-    if(params && params.data) {
-      const { data } = params
-      return data ? (rawGatewayUrl + this.buildLoginParams(data)) : rawGatewayUrl
+    if(params && params.attrs) {
+      const { attrs } = params
+      return attrs ? (rawGatewayUrl + this.buildLoginParams(attrs)) : rawGatewayUrl
     }
     return rawGatewayUrl
   }
 
-  buildLoginParams(data) {
-    const {idpIds, ...other} = data
-    console.debug("data", data)
+  buildLoginParams(attrs) {
+    const {idpIds, ...other} = attrs
+    console.debug("attrs", attrs)
     console.debug("idpIds", idpIds)
     console.debug("other", other)
     console.log(encodeQuery(other))
