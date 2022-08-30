@@ -11,6 +11,7 @@ const SLUG = "CryptrScheme"
 const PKCE_STORAGE_KEY = ".pkce_state"
 const VERIFIER_STORAGE_KEY = ".pkce_code_verifier"
 const AUTH_STATE_KEY = ".state"
+const LOGIN_TYPE_KEY = ".login_type"
 const TEMP_TOKEN = 'eyJhbGciOiJSUzI1NiIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NDAwMC90L2Jsb2NrcHVsc2UiLCJraWQiOiIwZTFhZTE1Yi1iMGIxLTQ4ZTEtOGY2OS04YmEzMzA2NDgxMjUiLCJ0eXAiOiJKV1QifQ.eyJhcHBsaWNhdGlvbl9tZXRhZGF0YSI6e30sImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwMCIsImNpZCI6IjgyOTc1YjYzLTIxZGUtNDk5Mi05NWEzLTY3Y2YzYzlkZmE5NCIsImRicyI6InNhbmRib3giLCJlbWFpbCI6InRoaWJhdWRAY3J5cHRyLmNvIiwiZXhwIjoxNjYxNDUzNjE3LCJpYXQiOjE2NjE0MTc2MTcsImlwcyI6Imdvb2dsZSIsImlzcyI6Imh0dHBzOi8vc2FtbHkuaG93dG86NDQ0My90L2Jsb2NrcHVsc2UiLCJqdGkiOiJkODEyY2JlMi02MWZjLTQ4OTMtYjY5NC1jNzEwNjY5Y2VlZGYiLCJqdHQiOiJhY2Nlc3MiLCJzY2kiOiJibG9ja3B1bHNlXzZKYzNUR2F0R21zSHpleGFSUDVackUiLCJzY3AiOlsib3BlbmlkIiwiZW1haWwiLCJwcm9maWxlIl0sInN1YiI6ImQ3MWYwMzA5LTIzM2QtNGU3MC1hYjZiLWNlZWI0NDhjZmQ1YyIsInRudCI6ImJsb2NrcHVsc2UiLCJ2ZXIiOjF9.W-B5upFaes_aY9-wLv4-o7rLnJewWReUHZMgAE3uXNhgj57XE1SIJd6PzNdoEmrW5LyyJYAyPfc0FdDzQNjNbCQ-y9fEi7RtGcAatv8prqz3k9AthHci4t-nZjDr9RR5Ov-Td-R8wGIJo4qao5PfkV4yRsTj9GOdmPHvdYvhGoqwdLRUTqimX5xbx__dX3S8Tuz54LXGyTWczpwES_nAiC18BZzqZ51PLOuNLsGGXSTHn9QswycTgTlJPS-VxDeyewUEyV4yrICso88JW45h40pICTQBkWqQpcHQD3SzovsUr5Af7NPX8e-DlXtnkhf2irII6VXpxgh2rCK4mJMaM38QpM-pg_L4aoeaiQxpANnOT7BQ9-ZnM7F7ICZqa23v2a8SoS-dYagQgzRXkcJCt0oPWjbIQ9A2b_VwyZ4cbT80jDwUGYIh3qH11H9DDy5xgZBWEmcVaEn2SL2BROJGbufOmCe9LXAQQXDcPrtTMqF2Akhv9UYhRxBtMovaZFnLtHlanWU2TrWzAvccAUFR4yOFZdR4_DghJd0GkgglZClYla_r4yriibHt5ZqvkHmudYWTnqLT_XaRn002O_Zk8_KPhpi63-QeqDLqvfpee1rKKaw1PCQTXN5ceQkTpqYGJLqmExD7U2MGMn1YfcZH08mimOfO563TxoaZKbp8dKI'
 
 export default class CryptrScheme {
@@ -110,7 +111,7 @@ export default class CryptrScheme {
 
 
     const domain = parsedQuery['organization_domain'] || this.options.domain
-    const signType = 'sso'
+    const signType = this.$auth.$storage.getUniversal(this.name + LOGIN_TYPE_KEY) || 'sso'
     const authId = parsedQuery['authorization_id']
     const authCode = parsedQuery['authorization_code']
     const requestData = {
@@ -168,13 +169,15 @@ export default class CryptrScheme {
     this.debug('login')
     this.debug('params', params)
     if(params !== undefined) {
-      const { data } = params
-      this.debug(data)
+      const { attrs } = params
+      this.debug('login', 'attrs', attrs)
     }
     this.debug('options', this.options)
     this.debug('endpoints', this.options.endpoints)
     await this.$auth.reset();
-    const url = await this.loginUrl(params)
+    const type = params.attrs && params.attrs.type ? params.attrs.type : 'signin'
+    this.$auth.$storage.setUniversal(this.name + LOGIN_TYPE_KEY, type)
+    const url = await this.loginUrl(type, params)
     console.debug(url)
     window.location.replace(url)
   }
@@ -391,6 +394,11 @@ export default class CryptrScheme {
     return this.options.isDedicatedDomain ? this.options.baseUrl : this.options.baseUrl + '/t/' + this.options.domain
   }
 
+  magicLinkRootUrl(params) {
+    const magicLinkDomain = params && params.attrs && params.attrs.domain ? params.attrs.domain : this.options.domain
+    return this.options.baseUrl + '/t/' +  magicLinkDomain
+  }
+
   genAndStoreState() {
     const state = generateRandomString()
     this.$auth.$storage.setUniversal(this.name + PKCE_STORAGE_KEY, state)
@@ -415,7 +423,7 @@ export default class CryptrScheme {
     return userInfoBaseUrl + '?' + encodeQuery({client_id: this.options.clientId})
   }
 
-  async loginUrl(params) {
+  async loginUrl(type, params) {
     const codeVerifier = this.genAndStoreVerifier()
     const codeChallenge = await this.pkceChallengeFromVerifier(codeVerifier)
     const opts = {
@@ -423,22 +431,30 @@ export default class CryptrScheme {
       redirect_uri: this.redirectURI(),
       client_state: this.genAndStoreState(),
       nonce: randomString(10),
-      scope: (params && params.data)  ? params.data.scope : this.options.scope.join(' '),
+      scope: (params && params.attrs && params.attrs.scope)  ? params.attrs.scope : this.options.scope.join(' '),
       code_challenge_method: this.options.codeChallengeMethod,
       code_challenge: codeChallenge
     }
+    this.debug('loginUrl', 'opts', opts)
+    console.debug(opts)
     this.$auth.$storage.setUniversal(this.name + AUTH_STATE_KEY, opts.state)
-    const rawGatewayUrl = this.gatewayRootUrl() + '?' + encodeQuery(opts)
-    if(params && params.data) {
-      const { data } = params
-      return data ? (rawGatewayUrl + this.buildLoginParams(data)) : rawGatewayUrl
+    if (type === 'sso') {
+      const rawGatewayUrl = this.gatewayRootUrl() + '?' + encodeQuery(opts)
+      if(params && params.attrs) {
+        const { attrs } = params
+        return attrs ? (rawGatewayUrl + this.buildLoginParams(attrs)) : rawGatewayUrl
+      }
+      return rawGatewayUrl
+    } else {
+      const baseMagicLinkUrl = [this.magicLinkRootUrl(params), params.attrs && params.attrs.locale ? params.attrs.locale : 'en', opts.client_state, type, 'new'].join('/')
+      return baseMagicLinkUrl + '?' + encodeQuery(opts)
+
     }
-    return rawGatewayUrl
   }
 
-  buildLoginParams(data) {
-    const {idpIds, ...other} = data
-    console.debug("data", data)
+  buildLoginParams(attrs) {
+    const {idpIds, ...other} = attrs
+    console.debug("attrs", attrs)
     console.debug("idpIds", idpIds)
     console.debug("other", other)
     console.log(encodeQuery(other))
