@@ -18,23 +18,10 @@ export default {
   auth: {
     strategies: {
       cryptr: {
-        // scheme: 'oauth2',
         scheme: '~schemes/cryptrScheme.js',
         baseUrl: process.env.CRYPTR_BASE_URL,
         domain: 'cryptr',
         audience: 'http://localhost:3000',
-        // endpoints: {
-        //   authorization: `${process.env.CRYPTR_BASE_URL}/?idp_ids[]=${process.env.CRYPTR_IDP_IDS && process.env.CRYPTR_IDP_IDS.split(',').join("&idp_ids[]=")}`,
-        //   token: `${process.env.CRYPTR_BASE_URL}/api/v1/tenants/blockpulse/${process.env.CRYPTR_CLIENT_ID}/oauth/sso/client/token`,
-        //   userInfo: `${process.env.CRYPTR_BASE_URL}/t/blockpulse/userinfo?client_id=${process.env.CRYPTR_CLIENT_ID}`,
-        //   // logout: `${process.env.CRYPTR_BASE_URL}/api/v1/tenants/blockpulse/oauth/token/revoke`,
-        //   logout: `/cryptr/logout`,
-        //   // logout: {
-        //   //   baseURL: process.env.CRYPTR_BASE_URL,
-        //   //   url: '/cryptr/logout',
-        //   //   method: 'post'
-        //   // },
-        // },
         clientId: process.env.CRYPTR_CLIENT_ID,
         isDedicatedDomain: true,
       },
