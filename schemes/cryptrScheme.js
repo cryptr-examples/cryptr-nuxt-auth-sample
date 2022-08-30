@@ -12,7 +12,6 @@ const PKCE_STORAGE_KEY = ".pkce_state"
 const VERIFIER_STORAGE_KEY = ".pkce_code_verifier"
 const AUTH_STATE_KEY = ".state"
 const LOGIN_TYPE_KEY = ".login_type"
-const TEMP_TOKEN = 'eyJhbGciOiJSUzI1NiIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NDAwMC90L2Jsb2NrcHVsc2UiLCJraWQiOiIwZTFhZTE1Yi1iMGIxLTQ4ZTEtOGY2OS04YmEzMzA2NDgxMjUiLCJ0eXAiOiJKV1QifQ.eyJhcHBsaWNhdGlvbl9tZXRhZGF0YSI6e30sImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwMCIsImNpZCI6IjgyOTc1YjYzLTIxZGUtNDk5Mi05NWEzLTY3Y2YzYzlkZmE5NCIsImRicyI6InNhbmRib3giLCJlbWFpbCI6InRoaWJhdWRAY3J5cHRyLmNvIiwiZXhwIjoxNjYxNDUzNjE3LCJpYXQiOjE2NjE0MTc2MTcsImlwcyI6Imdvb2dsZSIsImlzcyI6Imh0dHBzOi8vc2FtbHkuaG93dG86NDQ0My90L2Jsb2NrcHVsc2UiLCJqdGkiOiJkODEyY2JlMi02MWZjLTQ4OTMtYjY5NC1jNzEwNjY5Y2VlZGYiLCJqdHQiOiJhY2Nlc3MiLCJzY2kiOiJibG9ja3B1bHNlXzZKYzNUR2F0R21zSHpleGFSUDVackUiLCJzY3AiOlsib3BlbmlkIiwiZW1haWwiLCJwcm9maWxlIl0sInN1YiI6ImQ3MWYwMzA5LTIzM2QtNGU3MC1hYjZiLWNlZWI0NDhjZmQ1YyIsInRudCI6ImJsb2NrcHVsc2UiLCJ2ZXIiOjF9.W-B5upFaes_aY9-wLv4-o7rLnJewWReUHZMgAE3uXNhgj57XE1SIJd6PzNdoEmrW5LyyJYAyPfc0FdDzQNjNbCQ-y9fEi7RtGcAatv8prqz3k9AthHci4t-nZjDr9RR5Ov-Td-R8wGIJo4qao5PfkV4yRsTj9GOdmPHvdYvhGoqwdLRUTqimX5xbx__dX3S8Tuz54LXGyTWczpwES_nAiC18BZzqZ51PLOuNLsGGXSTHn9QswycTgTlJPS-VxDeyewUEyV4yrICso88JW45h40pICTQBkWqQpcHQD3SzovsUr5Af7NPX8e-DlXtnkhf2irII6VXpxgh2rCK4mJMaM38QpM-pg_L4aoeaiQxpANnOT7BQ9-ZnM7F7ICZqa23v2a8SoS-dYagQgzRXkcJCt0oPWjbIQ9A2b_VwyZ4cbT80jDwUGYIh3qH11H9DDy5xgZBWEmcVaEn2SL2BROJGbufOmCe9LXAQQXDcPrtTMqF2Akhv9UYhRxBtMovaZFnLtHlanWU2TrWzAvccAUFR4yOFZdR4_DghJd0GkgglZClYla_r4yriibHt5ZqvkHmudYWTnqLT_XaRn002O_Zk8_KPhpi63-QeqDLqvfpee1rKKaw1PCQTXN5ceQkTpqYGJLqmExD7U2MGMn1YfcZH08mimOfO563TxoaZKbp8dKI'
 
 export default class CryptrScheme {
 
@@ -25,7 +24,7 @@ export default class CryptrScheme {
     this.checkOptions()
     this.token = new Token(this, this.$auth.$storage)
     this.refreshToken = new RefreshToken(this, this.$auth.$storage)
-    this.debug('options', this.options)
+    // this.debug('options', this.options)
 
     // Initialize Refresh Controller
     this.refreshController = new RefreshController(this)
@@ -59,7 +58,6 @@ export default class CryptrScheme {
       this.$auth.reset()
     }
     const redirected = await this._handleCallback()
-    this.debug("redirected", redirected)
     if(!redirected) {
       return this.$auth.fetchUserOnce()
     }
@@ -67,7 +65,6 @@ export default class CryptrScheme {
 
 
   async _handleCallback() {
-    this.debug('_handleCallback')
     if (
       this.$auth.options.redirect &&
       normalizePath(this.$auth.ctx.route.path, this.$auth.ctx) !==
@@ -80,7 +77,6 @@ export default class CryptrScheme {
       return
     }
     const pkceState = this.$auth.$storage.getUniversal(this.name + PKCE_STORAGE_KEY)
-    this.debug('_handleCallback', 'pkceState', pkceState)
     if (!pkceState || !pkceState.length) {
       console.info(SLUG, 'Not going forward because pkce state unknown')
       return
@@ -131,15 +127,13 @@ export default class CryptrScheme {
 
     })
 
-    this.debug('_handleCallback', 'token response', response)
+    response && response.data && this.debug('_handleCallback', 'token response', response.data)
     token = getProp(response.data, this.options.token.property) || token
-    this.debug('_handleCallback', 'token', token)
     refreshToken =
     (getProp(
       response.data,
       this.options.refreshToken.property
       )) || refreshToken
-    this.debug('_handleCallback', 'refreshToken', refreshToken)
 
     if(!token || !token.length) {
       console.warn('no token found')
@@ -149,7 +143,7 @@ export default class CryptrScheme {
     this.debug('_handelCallback', this.token)
     this.token.set(token)
 
-    this.debug('_handelCallback', this.refreshToken)
+    // this.debug('_handelCallback', this.refreshToken)
     if(refreshToken && refreshToken.length) {
       this.refreshToken.set(refreshToken)
     }
