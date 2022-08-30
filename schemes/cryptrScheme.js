@@ -52,10 +52,7 @@ export default class CryptrScheme {
   }
 
   async mounted() {
-    this.debug("mounted")
     const { tokenExpired, refreshTokenExpired } = this.check(true)
-    this.debug('mounted', tokenExpired)
-    this.debug('mounted', refreshTokenExpired)
     // Force reset if refresh token has expired
     // Or if `autoLogout` is enabled and token has expired
     if (refreshTokenExpired || (tokenExpired && this.options.autoLogout)) {
@@ -167,13 +164,6 @@ export default class CryptrScheme {
 
   async login(params) {
     this.debug('login')
-    this.debug('params', params)
-    if(params !== undefined) {
-      const { attrs } = params
-      this.debug('login', 'attrs', attrs)
-    }
-    this.debug('options', this.options)
-    this.debug('endpoints', this.options.endpoints)
     await this.$auth.reset();
     const type = params.attrs && params.attrs.type ? params.attrs.type : 'signin'
     this.$auth.$storage.setUniversal(this.name + LOGIN_TYPE_KEY, type)
@@ -454,11 +444,6 @@ export default class CryptrScheme {
 
   buildLoginParams(attrs) {
     const {idpIds, ...other} = attrs
-    console.debug("attrs", attrs)
-    console.debug("idpIds", idpIds)
-    console.debug("other", other)
-    console.log(encodeQuery(other))
-    console.log(this.buildIdpParams(idpIds))
     return '&' + encodeQuery(other) + this.buildIdpParams(idpIds)
   }
   buildIdpParams(idpIds) {
