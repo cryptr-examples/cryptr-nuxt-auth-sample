@@ -72,6 +72,12 @@
       },
       async checkVuexState() {
         console.debug('vuex state', this.$store.state.auth)
+        console.debug('auth storage', this.$auth.$storage)
+        console.debug('auth storage state', this.$auth.$storage.state)
+        console.debug('auth storage options', this.$auth.$storage.options)
+        console.debug('auth storage cookies?', this.$auth.$storage.isCookiesEnabled())
+        console.debug('auth storage localStorage?', this.$auth.$storage.isLocalStorageEnabled())
+        console.debug('clearStorage', this.$auth.$storage.getCookies())
       },
 
       async refresh() {
