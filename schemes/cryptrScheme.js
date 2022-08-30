@@ -238,9 +238,7 @@ export default class CryptrScheme {
       })
     })
 
-    this.debug('refreshTokens', response)
     this.updateTokens(response)
-    this.debug('refreshTokens', response)
 
     return response;
   }
@@ -286,11 +284,18 @@ export default class CryptrScheme {
       response.data,
       this.options.refreshToken.property
     )
+    const idToken = getProp(
+      response.data,
+      'id_token'
+    )
 
     this.token.set(token)
 
     if (refreshToken) {
       this.refreshToken.set(refreshToken)
+    }
+    if (idToken) {
+      this.$auth.setUser(jwtDecode(idToken + ''))
     }
   }
 
