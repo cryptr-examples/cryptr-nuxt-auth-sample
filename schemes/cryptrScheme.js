@@ -1,5 +1,6 @@
 import { ExpiredAuthSessionError, Oauth2Scheme } from '@nuxtjs/auth-next'
 import {encodeQuery, generateRandomString, normalizePath, getProp, urlJoin, parseQuery, randomString} from './utils'
+import jwtDecode from 'jwt-decode'
 import requrl from 'requrl'
 import { RefreshToken } from './refresh-token'
 import { RefreshController } from './refresh-controller'
@@ -58,7 +59,8 @@ export default class CryptrScheme {
       this.$auth.reset()
     }
     const redirected = await this._handleCallback()
-    if(!redirected) {
+    this.debug('mounted', 'redirected', redirected)
+    if(redirected === false) {
       return this.$auth.fetchUserOnce()
     }
   }
@@ -140,6 +142,8 @@ export default class CryptrScheme {
       return
     }
 
+    const idToken = getProp(response.data, 'id_token')
+
     this.debug('_handelCallback', this.token)
     this.token.set(token)
 
@@ -147,13 +151,18 @@ export default class CryptrScheme {
     if(refreshToken && refreshToken.length) {
       this.refreshToken.set(refreshToken)
     }
-    this.debug('_handleCallback', 'watchLoggedIn', this.$auth.options.watchLoggedIn)
+    if(idToken) {
+      this.debug('handleCallback', 'set user Id Token', idToken)
+      const idTokenPayload = jwtDecode(idToken + '')
+      this.$auth.setUser(idTokenPayload)
+      return idTokenPayload != {};
+    }
     if(this.$auth.options.watchLoggedIn) {
       this.$auth.redirect('home', true)
       return true
     }
 
-    return Promise.resolve();
+    return false;
   }
 
   async login(params) {
@@ -361,11 +370,6 @@ export default class CryptrScheme {
     console.debug(SLUG, ...args)
   }
 
-  async refreshToken() {
-    this.debug('refreshToken')
-    return Promise.resolve()
-  }
-
   redirectURI() {
     const basePath = this.$auth.ctx.base || ''
     const path = normalizePath(
@@ -419,8 +423,6 @@ export default class CryptrScheme {
       code_challenge_method: this.options.codeChallengeMethod,
       code_challenge: codeChallenge
     }
-    this.debug('loginUrl', 'opts', opts)
-    console.debug(opts)
     this.$auth.$storage.setUniversal(this.name + AUTH_STATE_KEY, opts.state)
     if (type === 'sso') {
       const rawGatewayUrl = this.gatewayRootUrl() + '?' + encodeQuery(opts)
