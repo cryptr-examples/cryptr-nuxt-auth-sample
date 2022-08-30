@@ -38,7 +38,9 @@ export default {
         clientId: process.env.CRYPTR_CLIENT_ID,
         isDedicatedDomain: true,
       },
-    }
+    },
+    // cookie: false,
+    localStorage: false,
   },
 
   // Global CSS: https://go.nuxtjs.dev/config-css
