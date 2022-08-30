@@ -33,12 +33,36 @@ export default {
 
 ### 3. Start Cryptr Login Process
 
-to start a Cryptr process with Nuxt-Auth use following pattern:
+to start a Cryptr process with Nuxt-Auth use the following pattern:
 
 ```js
 await this.$auth.loginWith('cryptr', { attrs: /*your_custom_attrs*/})
 ```
 
+Several Options are available in `attrs` object, such as `locale` or even `redirectUri`, contact us for more
+
+#### SSO
+
+If you are interested in our SSO solution call the below code
+
+```js
+await this.$auth.loginWith('cryptr', { attrs: { type: 'sso' } })
+```
+
+If you would like to precise what SSO connections to display you can call like this:
+
+```js
+await this.$auth.loginWith('cryptr', { attrs: { type: 'sso' , idpIds: ['sso_connection_1', 'sso_connection_2']} })
+```
+
 #### Magic Link
 
-If you
+If you prefer to log in with our magic link solution use below
+
+```js
+await this.$auth.loginWith('cryptr', { attrs: { type: 'signin' } }) // 'signup' is also available
+```
+
+### Other actions
+
+You can refresh by `this.$auth.refreshTokens()` and log out with `this.$auth.logout()`
