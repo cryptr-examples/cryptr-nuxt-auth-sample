@@ -265,13 +265,15 @@ export default class CryptrScheme {
     }
 
     const url = this.userInfoUrl()
+    const token = this.token.get()
+    // const token = TEMP_TOKEN
 
     const response = await this.$auth.request({
       method: 'get',
       baseURL: this.options.baseUrl,
       url: url.replace(this.options.baseUrl, ''),
       headers: {
-        'Authorization': `Bearer ${TEMP_TOKEN}`
+        'Authorization': `Bearer ${token}`
       }
     })
 
