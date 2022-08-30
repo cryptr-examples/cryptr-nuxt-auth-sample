@@ -175,7 +175,7 @@ export default class CryptrScheme {
     this.debug('endpoints', this.options.endpoints)
     await this.$auth.reset();
     const url = await this.loginUrl(params)
-    this.debug(url)
+    console.debug(url)
     window.location.replace(url)
   }
 
@@ -429,10 +429,25 @@ export default class CryptrScheme {
     const rawGatewayUrl = this.gatewayRootUrl() + '?' + encodeQuery(opts)
     if(params && params.data) {
       const { data } = params
-      this.debug('provided options for login', data)
-      return (data && data.idpIds) ? (rawGatewayUrl + '&idp_ids[]=' + data.idpIds.join('&idp_ids[]=')) : rawGatewayUrl
+      return data ? (rawGatewayUrl + this.buildLoginParams(data)) : rawGatewayUrl
     }
     return rawGatewayUrl
+  }
+
+  buildLoginParams(data) {
+    const {idpIds, ...other} = data
+    console.debug("data", data)
+    console.debug("idpIds", idpIds)
+    console.debug("other", other)
+    console.log(encodeQuery(other))
+    console.log(this.buildIdpParams(idpIds))
+    return '&' + encodeQuery(other) + this.buildIdpParams(idpIds)
+  }
+  buildIdpParams(idpIds) {
+    if(idpIds && idpIds.length) {
+      return '&idp_ids[]=' + idpIds.join('&idp_ids[]=')
+    }
+    return ''
   }
 
 

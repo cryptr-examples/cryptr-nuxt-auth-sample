@@ -1,8 +1,14 @@
 <template>
   <div>
-    <div class="grid gap-4 grid-cols-2 mx-auto-items-center">
+    <div class="grid gap-2 grid-cols-3 mx-auto-items-center">
       <button v-on:click="cryptrLogin()" v-if="!$auth.loggedIn" class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded">
-        Login Cryptr
+        SSO Bare Gateway
+      </button>
+      <button v-on:click="cryptrLogin({idpIds: idpIds})" v-if="!$auth.loggedIn" class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded">
+        Multi SSO Gateway
+      </button>
+      <button v-on:click="cryptrLogin({idpIds: idpIds, locale: 'fr'})" v-if="!$auth.loggedIn" class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded">
+        FR Multi SSO Gateway
       </button>
     </div>
     <hr class="divider my-2" />
@@ -44,14 +50,14 @@
         login: {
           username: '',
           password: ''
-        }
+        },
+        idpIds: idpIds
       }
     },
     methods: {
-      async cryptrLogin() {
+      async cryptrLogin(attrs) {
         try {
-          // let response = await this.$auth.loginWith('cryptr', {data: {idpIds: idpIds}})
-          let response = await this.$auth.loginWith('cryptr')
+          let response = await this.$auth.loginWith('cryptr', {data: attrs})
           console.log(response)
         } catch (error) {
           console.log('cryptr error', error)
