@@ -61,9 +61,9 @@ export default class CryptrScheme {
     }
     const redirected = await this._handleCallback()
     this.debug('mounted', 'redirected', redirected)
-    if(redirected === false) {
+    // if(redirected === false) {
       return this.$auth.fetchUserOnce()
-    }
+    // }
   }
 
 
@@ -220,10 +220,13 @@ export default class CryptrScheme {
   async refreshTokens() {
     this.debug("refreshTokens")
     const refreshToken = this.refreshToken.get()
+    this.debug("refreshToken", refreshToken)
 
     if(!refreshToken) return;
 
+    this.debug("refreshToken", 'beforestatus', refreshTokenStatus)
     const refreshTokenStatus = this.refreshToken.status()
+    this.debug("refreshToken", 'status', refreshTokenStatus)
     if(refreshTokenStatus.expired()) {
       this.$auth.reset()
       throw new ExpiredAuthSessionError()
@@ -240,6 +243,7 @@ export default class CryptrScheme {
         refresh_token: refreshToken,
       })
     })
+    this.debug('refrsh', response)
 
     this.updateTokens(response)
 
@@ -260,23 +264,36 @@ export default class CryptrScheme {
       this.debug('fetchUser', 'stop because check not valid')
       return
     }
+    this.debug('fetchUser', 'should find user')
 
     const url = this.userInfoUrl()
+    this.debug('fetchUser', 'url', url)
     const token = this.token.get()
+    this.debug('fetchUser', 'token', token)
     // const token = TEMP_TOKEN
 
-    const response = await this.$auth.request({
+    const userParams = {
       method: 'get',
       baseURL: this.options.baseUrl,
       url: url.replace(this.options.baseUrl, ''),
       headers: {
         'Authorization': `Bearer ${token}`
       }
-    })
+    }
+    this.debug('fetchUser', 'params')
+    console.debug(userParams)
+    try {
+      const response = await this.$auth.request(userParams)
+      this.debug('fetchUser', 'response', response)
 
-    this.debug('fetchUser', 'user value', getProp(response.data, this.options.user.property))
+      this.debug('fetchUser', 'user value', getProp(response.data, this.options.user.property))
 
-    this.$auth.setUser(getProp(response.data, this.options.user.property))
+      this.$auth.setUser(getProp(response.data, this.options.user.property))
+
+    } catch (error) {
+      this.debug('fetchUser', 'error', error)
+      console.trace(error)
+    }
   }
 
   // HELPERS
@@ -348,6 +365,7 @@ export default class CryptrScheme {
     if (!checkStatus) {
       response.valid = true
       this.debug('check', 'no check required', response)
+      console.debug(response)
       return response
     }
 
