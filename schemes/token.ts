@@ -24,7 +24,6 @@ export class Token {
     const token = addTokenPrefix(tokenValue, this.scheme.options.token.type)
 
     this._setToken(token)
-    this._updateExpiration(token)
 
     if (this.scheme.requestHandler && typeof token === 'string') {
       this.scheme.requestHandler.setHeader(token)
@@ -35,7 +34,6 @@ export class Token {
 
   sync(): string | boolean {
     const token = this._syncToken()
-    this._syncExpiration()
 
     if (this.scheme.requestHandler && typeof token === 'string') {
       this.scheme.requestHandler.setHeader(token)
@@ -49,53 +47,20 @@ export class Token {
       this.scheme.requestHandler.clearHeader()
     }
     this._setToken(false)
-    this._setExpiration(false)
   }
 
   status(): TokenStatus {
-    return new TokenStatus(this.get(), this._getExpiration())
+    return new TokenStatus(this.get(), this._currentExpiration())
   }
 
-  private _getExpiration(): number | false {
-    const _key = this.scheme.options.token.expirationPrefix + this.scheme.name
-
-    return this.$storage.getUniversal(_key) as number | false
-  }
-
-  private _setExpiration(expiration: number | false): number | false {
-    const _key = this.scheme.options.token.expirationPrefix + this.scheme.name
-
-    return this.$storage.setUniversal(_key, expiration) as number | false
-  }
-
-  private _syncExpiration(): number | false {
-    const _key = this.scheme.options.token.expirationPrefix + this.scheme.name
-
-    return this.$storage.syncUniversal(_key) as number | false
-  }
-
-  private _updateExpiration(token: string | boolean): number | false | void {
+  private _currentExpiration(token = this.get()){
     let tokenExpiration
-    const _tokenIssuedAtMillis = Date.now()
-    const _tokenTTLMillis = Number(this.scheme.options.token.maxAge) * 1000
-    const _tokenExpiresAtMillis = _tokenTTLMillis
-      ? _tokenIssuedAtMillis + _tokenTTLMillis
-      : 0
-
-    try {
-      const tokenPaylod = jwtDecode<JwtPayload>(token + '')
-      tokenExpiration = tokenPaylod.exp ? tokenPaylod.exp * 1000 : _tokenExpiresAtMillis
-    } catch (error: any) {
-      // If the token is not jwt, we can't decode and refresh it, use _tokenExpiresAt value
-      tokenExpiration = _tokenExpiresAtMillis
-
-      if (!(error && error.name === 'InvalidTokenError')) {
-        throw error
-      }
-    }
-
-    // Set token expiration
-    return this._setExpiration(tokenExpiration || false)
+    const _issuedAtMillis = Date.now()
+    const _ttlMillis = Number(this.scheme.options.token.maxAge) * 1000
+    const defaultExpiration = _ttlMillis ?_issuedAtMillis + _ttlMillis : 0
+    const tokenPaylod = jwtDecode<JwtPayload>(token + '')
+    tokenExpiration = tokenPaylod.exp ? tokenPaylod.exp * 1000 : defaultExpiration
+    return tokenExpiration
   }
 
   private _setToken(token: string | boolean): string | boolean {

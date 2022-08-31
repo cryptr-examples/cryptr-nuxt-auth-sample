@@ -26,74 +26,30 @@ export class RefreshToken {
     )
 
     this._setToken(refreshToken)
-    this._updateExpiration(refreshToken)
 
     return refreshToken
   }
 
   sync(): string | boolean {
-    const refreshToken = this._syncToken()
-    this._syncExpiration()
-
-    return refreshToken
+    return this._syncToken()
   }
 
   reset(): void {
     this._setToken(false)
-    this._setExpiration(false)
   }
 
   status(): TokenStatus {
-    return new TokenStatus(this.get(), this._getExpiration())
+    return new TokenStatus(this.get(), this._currentExpiration())
   }
 
-  private _getExpiration(): number | false {
-    const _key =
-      this.scheme.options.refreshToken.expirationPrefix + this.scheme.name
-
-    return this.$storage.getUniversal(_key) as number | false
-  }
-
-  private _setExpiration(expiration: number | false): number | false {
-    const _key =
-      this.scheme.options.refreshToken.expirationPrefix + this.scheme.name
-
-    return this.$storage.setUniversal(_key, expiration) as number | false
-  }
-
-  private _syncExpiration(): number | false {
-    const _key =
-      this.scheme.options.refreshToken.expirationPrefix + this.scheme.name
-
-    return this.$storage.syncUniversal(_key) as number | false
-  }
-
-  private _updateExpiration(
-    refreshToken: string | boolean
-  ): number | false | void {
-    let refreshTokenExpiration
-    const _tokenIssuedAtMillis = Date.now()
-    const _tokenTTLMillis =
-      Number(this.scheme.options.refreshToken.maxAge) * 1000
-    const _tokenExpiresAtMillis = _tokenTTLMillis
-      ? _tokenIssuedAtMillis + _tokenTTLMillis
-      : 0
-
-    try {
-      const refresh = refreshToken + ''
-      const refreshPaylod = jwtDecode<JwtPayload>(refresh)
-      refreshTokenExpiration = refreshPaylod.exp ? refreshPaylod.exp * 1000 : _tokenExpiresAtMillis
-    } catch (error: any) {
-      // If the token is not jwt, we can't decode and refresh it, use _tokenExpiresAt value
-      refreshTokenExpiration = _tokenExpiresAtMillis
-
-      if (!((error && error.name === 'InvalidTokenError') /* jwtDecode */)) {
-        throw error
-      }
-    }
-
-    // Set token expiration
-    return this._setExpiration(refreshTokenExpiration || false)
+  private _currentExpiration(refresh = this.get()) {
+    let tokenExpiration
+    const _issuedAtMillis = Date.now()
+    const _ttlMillis = Number(this.scheme.options.refreshToken.maxAge) * 1000
+    const defaultExpiration = _ttlMillis ? _issuedAtMillis + _ttlMillis : 0
+    const tokenPaylod = jwtDecode<JwtPayload>(refresh + '')
+    tokenExpiration = tokenPaylod.exp ? tokenPaylod.exp * 1000 : defaultExpiration
+    return tokenExpiration
   }
 
   private _setToken(refreshToken: string | boolean): string | boolean {
