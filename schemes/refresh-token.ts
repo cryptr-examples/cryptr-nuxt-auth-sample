@@ -43,13 +43,14 @@ export class RefreshToken {
   }
 
   private _currentExpiration(refresh = this.get()) {
+    console.debug('refresh_token', refresh)
     let tokenExpiration
     const _issuedAtMillis = Date.now()
     const _ttlMillis = Number(this.scheme.options.refreshToken.maxAge) * 1000
     const defaultExpiration = _ttlMillis ? _issuedAtMillis + _ttlMillis : 0
-    const tokenPaylod = jwtDecode<JwtPayload>(refresh + '')
-    tokenExpiration = tokenPaylod.exp ? tokenPaylod.exp * 1000 : defaultExpiration
-    return tokenExpiration
+    // const tokenPaylod = jwtDecode<JwtPayload>(refresh + '')
+    // tokenExpiration = tokenPaylod.exp ? tokenPaylod.exp * 1000 : defaultExpiration
+    return defaultExpiration
   }
 
   private _setToken(refreshToken: string | boolean): string | boolean {
