@@ -263,25 +263,29 @@ export default class CryptrScheme {
 
     const url = this.userInfoUrl()
     const token = this.token.get()
+    const refresh = this.refreshToken.get()
+    this.debug('fetchUser', 'refresh', refresh)
     // const token = TEMP_TOKEN
+    this.refreshTokens()
 
-    const userParams = {
-      method: 'get',
-      baseURL: this.options.baseUrl,
-      url: url.replace(this.options.baseUrl, ''),
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    }
-    try {
-      const response = await this.$auth.request(userParams)
+    // const userParams = {
+    //   method: 'get',
+    //   baseURL: this.options.baseUrl,
+    //   url: url.replace(this.options.baseUrl, ''),
+    //   headers: {
+    //     'Authorization': `Bearer ${token}`
+    //   }
+    // }
+    // try {
+    //   const response = await this.$auth.request(userParams)
+    //   this.debug('fetchUser', 'response')
+    //   console.debug(response.data)
+    //   this.$auth.setUser(getProp(response.data, this.options.user.property))
 
-      this.$auth.setUser(getProp(response.data, this.options.user.property))
-
-    } catch (error) {
-      this.debug('fetchUser', 'error', error)
-      console.trace(error)
-    }
+    // } catch (error) {
+    //   this.debug('fetchUser', 'error', error)
+    //   console.trace(error)
+    // }
   }
 
   // HELPERS
