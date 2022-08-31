@@ -13,6 +13,7 @@ const PKCE_STORAGE_KEY = ".pkce_state"
 const VERIFIER_STORAGE_KEY = ".pkce_code_verifier"
 const AUTH_STATE_KEY = ".state"
 const LOGIN_TYPE_KEY = ".login_type"
+const DEFAULT_SIGN_TYPE = "signin"
 
 export default class CryptrScheme {
 
@@ -106,7 +107,7 @@ export default class CryptrScheme {
 
 
     const domain = parsedQuery['organization_domain'] || this.options.domain
-    const signType = this.$auth.$storage.getUniversal(this.name + LOGIN_TYPE_KEY) || 'sso'
+    const signType = this.$auth.$storage.getUniversal(this.name + LOGIN_TYPE_KEY) || DEFAULT_SIGN_TYPE
     const authId = parsedQuery['authorization_id']
     const authCode = parsedQuery['authorization_code']
     const requestData = {
@@ -128,6 +129,8 @@ export default class CryptrScheme {
       data: encodeQuery(requestData)
 
     })
+
+    this.$auth.$storage.setUniversal(this.name + LOGIN_TYPE_KEY, null)
 
     response && response.data && this.debug('_handleCallback', 'token response', response.data)
     token = getProp(response.data, this.options.token.property) || token
