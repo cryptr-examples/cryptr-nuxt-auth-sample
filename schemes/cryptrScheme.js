@@ -261,10 +261,8 @@ export default class CryptrScheme {
       return
     }
 
-    const url = this.userInfoUrl()
-    const token = this.token.get()
-    const refresh = this.refreshToken.get()
-    this.debug('fetchUser', 'refresh', refresh)
+    // const url = this.userInfoUrl()
+    // const token = this.token.get()
     // const token = TEMP_TOKEN
     this.refreshTokens()
 
