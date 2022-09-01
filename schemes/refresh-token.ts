@@ -30,27 +30,45 @@ export class RefreshToken {
     return refreshToken
   }
 
+  setExpiration(expiration: number | false) {
+    const _key = this.scheme.options.refreshToken.expirationPrefix + this.scheme.name
+    return this.$storage.setUniversal(_key, expiration) as number | false
+  }
+
+  private _getExpiration(): number | false {
+    const _key = this.scheme.options.refreshToken.expirationPrefix + this.scheme.name
+    return this.$storage.getUniversal(_key) as number | false
+  }
+
+  private _syncExpiration(): number | false {
+    const _key = this.scheme.options.refreshToken.expirationPrefix + this.scheme.name
+    return this.$storage.syncUniversal(_key) as number | false
+  }
+
   sync(): string | boolean {
-    return this._syncToken()
+    const refreshToken = this._syncToken()
+    this._syncExpiration()
+
+    return refreshToken
   }
 
   reset(): void {
     this._setToken(false)
+    this.setExpiration(false)
   }
 
   status(): TokenStatus {
     return new TokenStatus(this.get(), this._currentExpiration())
   }
 
-  private _currentExpiration(refresh = this.get()) {
+  private _currentExpiration(refresh = this.get()): number | false {
     console.debug('refresh_token', refresh)
     let tokenExpiration
     const _issuedAtMillis = Date.now()
     const _ttlMillis = Number(this.scheme.options.refreshToken.maxAge) * 1000
     const defaultExpiration = _ttlMillis ? _issuedAtMillis + _ttlMillis : 0
-    // const tokenPaylod = jwtDecode<JwtPayload>(refresh + '')
-    // tokenExpiration = tokenPaylod.exp ? tokenPaylod.exp * 1000 : defaultExpiration
-    return defaultExpiration
+
+    return this._getExpiration() || defaultExpiration
   }
 
   private _setToken(refreshToken: string | boolean): string | boolean {

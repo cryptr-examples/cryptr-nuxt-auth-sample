@@ -154,6 +154,12 @@ export default class CryptrScheme {
     if(refreshToken && refreshToken.length) {
       this.refreshToken.set(refreshToken)
     }
+
+    const refreshExpiration = getProp(response.data, "refresh_token_expires_at")
+    if(refreshExpiration) {
+      const expirationInt = new Date(refreshExpiration).getTime()
+      this.refreshToken.setExpiration(expirationInt)
+    }
     if(idToken) {
       this.debug('handleCallback', 'set user Id Token', idToken)
       const idTokenPayload = jwtDecode(idToken + '')
@@ -306,6 +312,13 @@ export default class CryptrScheme {
     }
     if (idToken) {
       this.$auth.setUser(jwtDecode(idToken + ''))
+    }
+
+    const refreshExpiration = getProp(response.data, "refresh_token_expires_at")
+    if(refreshExpiration) {
+      const expirationInt = new Date(refreshExpiration).getTime()
+      console.debug(expirationInt)
+      this.refreshToken.setExpiration(expirationInt)
     }
   }
 
